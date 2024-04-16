@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Application</title>
+    <style>
+        /* Your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f3f3;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .button {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        form input[type="email"],
+        form input[type="text"],
+        form input[type="password"],
+        form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        form button[type="submit"] {
+            background-color: #4CAF50;
+            color: rgb(255, 255, 255);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        form button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .parking-spots {
+            list-style: none;
+            padding: 0;
+        }
+
+        .parking-spots li {
+            margin-bottom: 5px;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="registrationSection" class="section active">
+            <h1>User Registration</h1>
+            <form id="registrationForm">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+                <label for="mobileNumber">Mobile Number:</label>
+                <input type="text" id="mobileNumber" name="mobileNumber" required>
+                <label for="vehicleNumberPlate">Vehicle Number Plate:</label>
+                <input type="text" id="vehicleNumberPlate" name="vehicleNumberPlate" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required minlength="6">
+                <button type="submit" class="button">Register</button>
+            </form>
+        </div>
+
+        <div id="mapSection" class="section hidden">
+            <h1>Search Parking</h1>
+            <button onclick="searchParking()" class="button">Search for Parking</button>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            fetch('/register', {
+                method: 'POST',
+                body: JSON.stringify(Object.fromEntries(formData)),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                toggleSection('registrationSection', 'mapSection');
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function toggleSection(showId, hideId) {
+            document.getElementById(showId).classList.add('active');
+            document.getElementById(hideId).classList.remove('active');
+        }
+
+        function searchParking() {
+            var map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: -1.286389, lng: 36.817223}, // Nairobi coordinates
+                zoom: 15
+            });
+
+            var service = new google.maps.places.PlacesService(map);
+
+            // Example: Search for parking near Nairobi
+            service.nearbySearch({
+                location: {lat: -1.286389, lng: 36.817223}, // Nairobi coordinates
+                radius: 1000, // 1000 meters radius
+                type: ['parking']
+            }, callback);
+
+            function callback(results, status) {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    for (var i = 0; i < results.length; i++) {
+                        createMarker(results[i]);
+                    }
+                }
+            }
+
+            function createMarker(place) {
+                var marker = new google.maps.Marker({
+                    map: map,
+                    position: place.geometry.location
+                });
+
+                // Add click listener to show info window with place name
+                marker.addListener('click', function() {
+                    var infowindow = new google.maps.InfoWindow({
+                        content: place.name
+                    });
+                    infowindow.open(map, marker);
+                });
+            }
+        }
+    </script>
+
+    <!-- Include Google Maps API script -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+</body>
+</html>
